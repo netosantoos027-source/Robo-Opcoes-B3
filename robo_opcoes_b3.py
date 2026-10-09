@@ -30,71 +30,6 @@ acoes = [
     'UGPA3.SA', 'USIM5.SA', 'VALE3.SA', 'VAMO3.SA', 'VBBR3.SA', 'WEGE3.SA', 'YDUQ3.SA'
 ]
 
-# Dicionário integrado de empresas e setores da B3
-info_empresas = {
-    'ALOS3': {'nome': 'Allos', 'setor': 'Consumo Cíclico / Imóveis'},
-    'ALPA4': {'nome': 'Alpargatas', 'setor': 'Consumo Cíclico / Calçados'},
-    'ABEV3': {'nome': 'Ambev', 'setor': 'Consumo não Cíclico / Bebidas'},
-    'ASAI3': {'nome': 'Assaí Atacadista', 'setor': 'Consumo não Cíclico / Alimentos'},
-    'B3SA3': {'nome': 'B3 S.A.', 'setor': 'Financeiro / Serviços Financeiros'},
-    'BBAS3': {'nome': 'Banco do Brasil', 'setor': 'Financeiro / Intermediários Financeiros'},
-    'BBDC3': {'nome': 'Banco Bradesco (ON)', 'setor': 'Financeiro / Intermediários Financeiros'},
-    'BBDC4': {'nome': 'Banco Bradesco (PN)', 'setor': 'Financeiro / Intermediários Financeiros'},
-    'BBSE3': {'nome': 'BB Seguridade', 'setor': 'Financeiro / Previdência e Seguros'},
-    'BEEF3': {'nome': 'Minerva Foods', 'setor': 'Consumo não Cíclico / Alimentos'},
-    'BPAC11': {'nome': 'BTG Pactual', 'setor': 'Financeiro / Intermediários Financeiros'},
-    'BRAP4': {'nome': 'Bradespar', 'setor': 'Materiais Básicos / Mineração'},
-    'BRKM5': {'nome': 'Braskem', 'setor': 'Materiais Básicos / Químicos'},
-    'CMIG4': {'nome': 'Cemig', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'CMIN3': {'nome': 'CSN Mineração', 'setor': 'Materiais Básicos / Mineração'},
-    'COGN3': {'nome': 'Cogna Educação', 'setor': 'Consumo Cíclico / Ensino'},
-    'CPFE3': {'nome': 'CPFL Energia', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'CSAN3': {'nome': 'Cosan', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'CSNA3': {'nome': 'Siderúrgica Nacional', 'setor': 'Materiais Básicos / Siderurgia'},
-    'CVCB3': {'nome': 'CVC Viagens', 'setor': 'Consumo Cíclico / Viagens e Lazer'},
-    'CYRE3': {'nome': 'Cyrela', 'setor': 'Consumo Cíclico / Incorporações'},
-    'DXCO3': {'nome': 'Dexco', 'setor': 'Materiais Básicos / Madeira e Papel'},
-    'ENEV3': {'nome': 'Eneva', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'ENGI11': {'nome': 'Energisa', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'EQTL3': {'nome': 'Equatorial Energia', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'EZTC3': {'nome': 'EZTEC', 'setor': 'Consumo Cíclico / Incorporações'},
-    'FLRY3': {'nome': 'Fleury', 'setor': 'Saúde / Medicina Diagnóstica'},
-    'GGBR4': {'nome': 'Gerdau', 'setor': 'Materiais Básicos / Siderurgia'},
-    'GOAU4': {'nome': 'Metalúrgica Gerdau', 'setor': 'Materiais Básicos / Siderurgia'},
-    'HAPV3': {'nome': 'Hapvida', 'setor': 'Saúde / Planos de Saúde'},
-    'HYPE3': {'nome': 'Hypera Pharma', 'setor': 'Saúde / Medicamentos'},
-    'IGTI11': {'nome': 'Iguatemi', 'setor': 'Consumo Cíclico / Imóveis'},
-    'IRBR3': {'nome': 'IRB Brasil RE', 'setor': 'Financeiro / Seguros'},
-    'ITSA4': {'nome': 'Itaúsa', 'setor': 'Financeiro / Holdings Financeiras'},
-    'ITUB4': {'nome': 'Itaú Unibanco', 'setor': 'Financeiro / Intermediários Financeiras'},
-    'KLBN11': {'nome': 'Klabin', 'setor': 'Materiais Básicos / Papel e Celulose'},
-    'LREN3': {'nome': 'Lojas Renner', 'setor': 'Consumo Cíclico / Tecidos e Vestuário'},
-    'LWSA3': {'nome': 'Locaweb', 'setor': 'Tecnologia da Informação / Programas'},
-    'MGLU3': {'nome': 'Magazine Luiza', 'setor': 'Consumo Cíclico / Eletrodomésticos'},
-    'MRVE3': {'nome': 'MRV Engenharia', 'setor': 'Consumo Cíclico / Incorporações'},
-    'MULT3': {'nome': 'Multiplan', 'setor': 'Consumo Cíclico / Imóveis'},
-    'PCAR3': {'nome': 'Pão de Açúcar', 'setor': 'Consumo não Cíclico / Alimentos'},
-    'PETR3': {'nome': 'Petrobras (ON)', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'PETR4': {'nome': 'Petrobras (PN)', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'RECV3': {'nome': 'PetroReconcavo', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'RAIZ4': {'nome': 'Raízen', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'RADL3': {'nome': 'RaiaDrogasil', 'setor': 'Saúde / Comércio e Distribuição'},
-    'RENT3': {'nome': 'Localiza', 'setor': 'Consumo Cíclico / Aluguel de Carros'},
-    'SANB11': {'nome': 'Banco Santander', 'setor': 'Financeiro / Intermediários Financeiros'},
-    'SMTO3': {'nome': 'São Martinho', 'setor': 'Consumo não Cíclico / Agricultura'},
-    'SUZB3': {'nome': 'Suzano', 'setor': 'Materiais Básicos / Papel e Celulose'},
-    'TAEE11': {'nome': 'Taesa', 'setor': 'Utilidade Pública / Energia Elétrica'},
-    'TIMS3': {'nome': 'TIM Brasil', 'setor': 'Telecomunicações'},
-    'TOTS3': {'nome': 'Totvs', 'setor': 'Tecnologia da Informação / Programas'},
-    'UGPA3': {'nome': 'Ultrapar', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'USIM5': {'nome': 'Usiminas', 'setor': 'Materiais Básicos / Siderurgia'},
-    'VALE3': {'nome': 'Vale', 'setor': 'Materiais Básicos / Mineração'},
-    'VAMO3': {'nome': 'Vamos', 'setor': 'Bens Industriais / Transporte'},
-    'VBBR3': {'nome': 'Vibra Energia', 'setor': 'Petróleo, Gás e Biocombustíveis'},
-    'WEGE3': {'nome': 'WEG', 'setor': 'Bens Industriais / Máquinas e Motores'},
-    'YDUQ3': {'nome': 'Yduqs', 'setor': 'Consumo Cíclico / Ensino'}
-}
-
 def calcular_opcao_teorica(ticker_acao, preco_entrada):
     letras_call = {1:'A', 2:'B', 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 9:'I', 10:'J', 11:'K', 12:'L'}
     mes_atual = datetime.now().month
@@ -109,11 +44,12 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     return ticker_opcao, round(strike_alvo, 2)
 
 def calcular_data_alvo_util(dias_necessarios):
+    """Calcula uma data alvo pulando os finais de semana (Sábado e Domingo)"""
     data_calc = datetime.now(fuso_br)
     dias_adicionados = 0
-    while dias_adicionados < dias_necessarios:
+    while dias_added < dias_necessarios:
         data_calc += timedelta(days=1)
-        if data_calc.weekday() < 5:
+        if data_calc.weekday() < 5:  # 0 a 4 representa Segunda a Sexta
             dias_adicionados += 1
     return data_calc.strftime('%d/%m/%Y')
 
@@ -131,6 +67,7 @@ def enviar_telegram(texto):
             print(f"❌ Erro de resposta do Telegram: {response.text}", flush=True)
     except Exception as e:
         print(f"❌ Erro de rede: {e}", flush=True)
+
 print(f"📡 [MESA AO VIVO] Iniciando varredura em tempo real B3... {data_hoje}...")
 oportunidades = []
 
@@ -169,8 +106,8 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🎯 GATILHO COMPRADOR - MANTIDO EM IF TRUE PARA O SEU ALERTA DE TESTE IMEDIATO
-            if True:
+            # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência institucional
+            if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
                 alvo_tecnico = preco_atual + (3 * distancia_risco)
@@ -179,23 +116,20 @@ try:
                 porcentagem_alvo = ((alvo_tecnico - preco_atual) / preco_atual) * 100
                 score_volume = volume_projetado / volume_medio if volume_medio > 0 else 1.0
 
+                # PROJEÇÃO DE TEMPO ESTIMADO BASEADO NO ATR (ESTATÍSTICA)
                 distancia_ao_alvo = alvo_tecnico - preco_atual
+                # Divide a distância pela variação média diária (ATR) para estimar os dias úteis
                 dias_estimados = int(np.ceil(distancia_ao_alvo / atr_atual)) if atr_atual > 0 else 5
                 
+                # Garante um limite mínimo saudável de carregamento
                 if dias_estimados < 3: dias_estimados = 3
                 if dias_estimados > 10: dias_estimados = 10
                 
                 data_alvo_projetada = calcular_data_alvo_util(dias_estimados)
                 opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
 
-                raiz_pura = ticker.replace('.SA', '')
-                nome_empresa = info_empresas.get(raiz_pura, {}).get('nome', 'Empresa B3')
-                setor_empresa = info_empresas.get(raiz_pura, {}).get('setor', 'Setor Geral')
-
                 oportunidades.append({
-                    'Ação': raiz_pura,
-                    'Nome': nome_empresa,
-                    'Setor': setor_empresa,
+                    'Ação': ticker.replace('.SA', ''),
                     'Entrada': round(preco_atual, 2),
                     'Alvo': round(alvo_tecnico, 2),
                     'Alvo_Porc': round(porcentagem_alvo, 1),
@@ -222,9 +156,6 @@ if not df_ops.empty:
         msg_entrada = f"🚨 *ALERTA EM TEMPO REAL B3* 🚨\n"
         msg_entrada += f"_Rompimento com Pressão Compradora Detectado_\n\n"
         msg_entrada += f"📌 *Ação Principal:* {row['Ação']}\n"
-        msg_entrada += f" • Empresa: {row['Nome']}\n"
-        msg_entrada += f" • Setor: {row['Setor']}\n\n"
-        msg_entrada += f"📊 *MÉTRICAS DE ENTRADA:*\n"
         msg_entrada += f" • Preço Atual: R\$ {row['Entrada']}\n"
         msg_entrada += f" • Alvo Técnico (3:1): R\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
         msg_entrada += f" • Stop de Proteção: R\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
@@ -236,7 +167,7 @@ if not df_ops.empty:
         msg_entrada += f"⏳ *ESTIMATIVA DE CARREGAMENTO:*\n"
         msg_entrada += f" • Janela de Execução: {row['Dias_Est']} dias úteis\n"
         msg_entrada += f" • *DATA ALVO ESTIMADA: {row['Data_Alvo']}*\n\n"
-        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique a liquidez real no book. Caso o contrato exato esteja ilíquido, suba de 1 a 2 strikes em direção ao preço de tela."
+        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez."
         
         enviar_telegram(msg_entrada)
         time.sleep(2)
