@@ -10,16 +10,17 @@ import sys
 # ---------------------------------------------------------------------
 # PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (TEMPO REAL / ROBUSTO ITM)
 # ---------------------------------------------------------------------
-# 🚨 COLE O SEU TOKEN NOVO DO NETO2026_B3_BOT ENTRE AS ASPAS ABAIXO:
-TELEGRAM_TOKEN = "COLE_AQUI_O_TOKEN_NOVO_DO_BOTFATHER"
+# Token oficial do seu robô ativo (@neto2026_b3_bot)
+TELEGRAM_TOKEN = "8977957095:AAFGcSuzjKxb2uX0lQzWwaozFdrreZ9myjc"
 
-# Canal Novo e Exclusivo configurado para o projeto de opções
-TELEGRAM_CHAT_ID = "@sinais_opcoes_b3"
+# 🚨 COLOQUE O SEU ID NUMÉRICO DO @userinfobot (SEM ASPAS) NA LINHA ABAIXO:
+TELEGRAM_CHAT_ID = 123456789
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 data_hoje = agora_br.strftime('%d-%m-%Y %H:%M')
 
+# Lista oficial de ações calibradas e líquidas da B3
 acoes = [
     'ALOS3.SA', 'ALPA4.SA', 'ABEV3.SA', 'ASAI3.SA', 'B3SA3.SA', 'BBAS3.SA', 
     'BBDC3.SA', 'BBDC4.SA', 'BBSE3.SA', 'BEEF3.SA', 'BPAC11.SA', 'BRAP4.SA', 
@@ -34,12 +35,19 @@ acoes = [
 ]
 
 def calcular_opcao_teorica(ticker_acao, preco_entrada):
+    """
+    Mapeia matematicamente a CALL ideal do Estilo Robusto.
+    Sempre busca a série do PRÓXIMO mês para proteger contra a perda de tempo (Theta decay).
+    """
     letras_call = {1:'A', 2:'B', 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 9:'I', 10:'J', 11:'K', 12:'L'}
+    
     mes_atual = datetime.now().month
     mes_seguinte = mes_atual + 1 if mes_atual < 12 else 1
     letra_vencimento = letras_call[mes_seguinte]
+    
     raiz_ticker = ticker_acao.replace('.SA', '')
     
+    # Filtro Robusto: Strike estruturado ~6% dentro do dinheiro (ITM) para segurança
     strike_alvo = preco_entrada * (1 - 0.06)
     sufixo_strike = str(int(round(strike_alvo)))
     
@@ -74,6 +82,7 @@ try:
             if dados.empty or len(dados) < 200: 
                 continue
 
+            # Cálculo dos Indicadores Técnicos Diários
             dados['Media_20'] = dados['Close'].rolling(window=20).mean()
             dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
             dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
@@ -82,6 +91,7 @@ try:
             dados['High_Low'] = dados['High'] - dados['Low']
             dados['ATR'] = dados['High_Low'].rolling(window=14).mean()
 
+            # Captura do preço de AGORA (último tick do candle intradiário em formação)
             preco_atual = float(dados['Close'].iloc[-1])
             banda_sup_atual = float(dados['Banda_Sup'].iloc[-1])
             media_200_atual = float(dados['Media_200'].iloc[-1])
@@ -98,7 +108,6 @@ try:
                 volume_projetado = volume_atual
 
             # 🛠️ GATILHO TEMPORÁRIO PARA TESTE FORÇADO (IF TRUE)
-            # Altere para o filtro real após validar que as mensagens chegaram!
             if True:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
