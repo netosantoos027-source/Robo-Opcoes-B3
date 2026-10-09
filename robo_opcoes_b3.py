@@ -14,8 +14,7 @@ TELEGRAM_TOKEN = "8977957095:AAG0I120Ehu079dWuMX-cGkqLIjUGBgCsWU"
 TELEGRAM_CHAT_ID = "@opcoes_b3_neto"
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
-agora_br = datetime.now(fuso_br)
-data_hoje = agora_br.strftime('%d-%m-%Y %H:%M')
+data_hoje = datetime.now(fuso_br).strftime('%d-%m-%Y %H:%M')
 
 acoes = [
     'ALOS3.SA', 'ALPA4.SA', 'ABEV3.SA', 'ASAI3.SA', 'B3SA3.SA', 'BBAS3.SA', 
@@ -37,24 +36,25 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     letra_vencimento = letras_call[mes_seguinte]
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    strike_alvo = preco_entrada * (1 - 0.06)
+    # AJUSTE DE FILTRO ANTIBOOK ZERADO: Reduzido de 6% para 3% a distância do strike ITM.
+    # Isso joga o alvo mais próximo da zona onde os Formadores de Mercado atuam obrigatoriamente.
+    strike_alvo = preco_entrada * (1 - 0.03)
     sufixo_strike = str(int(round(strike_alvo)))
     
     ticker_opcao = f"{raiz_ticker}{letra_vencimento}{sufixo_strike}"
     return ticker_opcao, round(strike_alvo, 2)
 
 def calcular_data_alvo_util(dias_necessarios):
-    """Calcula uma data alvo pulando os finais de semana (Sábado e Domingo)"""
     data_calc = datetime.now(fuso_br)
     dias_adicionados = 0
-    while dias_added < dias_necessarios:
+    while dias_adicionados < dias_necessarios:
         data_calc += timedelta(days=1)
-        if data_calc.weekday() < 5:  # 0 a 4 representa Segunda a Sexta
+        if data_calc.weekday() < 5:
             dias_adicionados += 1
     return data_calc.strftime('%d/%m/%Y')
 
 def enviar_telegram(texto):
-    site_base = "https://telegram.org"
+    site_base = "https://" + "api.telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
     acao_envio = "/sendMessage"
     url_final = site_base + pasta_bot + acao_envio
@@ -106,7 +106,7 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência institucional
+            # 🎯 ESTRATÉGIA REAL ATIVADA
             if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
@@ -116,12 +116,9 @@ try:
                 porcentagem_alvo = ((alvo_tecnico - preco_atual) / preco_atual) * 100
                 score_volume = volume_projetado / volume_medio if volume_medio > 0 else 1.0
 
-                # PROJEÇÃO DE TEMPO ESTIMADO BASEADO NO ATR (ESTATÍSTICA)
                 distancia_ao_alvo = alvo_tecnico - preco_atual
-                # Divide a distância pela variação média diária (ATR) para estimar os dias úteis
                 dias_estimados = int(np.ceil(distancia_ao_alvo / atr_atual)) if atr_atual > 0 else 5
                 
-                # Garante um limite mínimo saudável de carregamento
                 if dias_estimados < 3: dias_estimados = 3
                 if dias_estimados > 10: dias_estimados = 10
                 
@@ -167,7 +164,7 @@ if not df_ops.empty:
         msg_entrada += f"⏳ *ESTIMATIVA DE CARREGAMENTO:*\n"
         msg_entrada += f" • Janela de Execução: {row['Dias_Est']} dias úteis\n"
         msg_entrada += f" • *DATA ALVO ESTIMADA: {row['Data_Alvo']}*\n\n"
-        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez."
+        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique a liquidez real no book. Caso o contrato exato esteja ilíquido, suba de 1 a 2 strikes em direção ao preço de tela."
         
         enviar_telegram(msg_entrada)
         time.sleep(2)
