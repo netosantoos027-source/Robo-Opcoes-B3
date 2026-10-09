@@ -66,7 +66,7 @@ info_empresas = {
     'IGTI11': {'nome': 'Iguatemi', 'setor': 'Consumo Cíclico / Imóveis'},
     'IRBR3': {'nome': 'IRB Brasil RE', 'setor': 'Financeiro / Seguros'},
     'ITSA4': {'nome': 'Itaúsa', 'setor': 'Financeiro / Holdings Financeiras'},
-    'ITUB4': {'nome': 'Itaú Unibanco', 'setor': 'Financeiro / Intermediários Financeiros'},
+    'ITUB4': {'nome': 'Itaú Unibanco', 'setor': 'Financeiro / Intermediários Financeiras'},
     'KLBN11': {'nome': 'Klabin', 'setor': 'Materiais Básicos / Papel e Celulose'},
     'LREN3': {'nome': 'Lojas Renner', 'setor': 'Consumo Cíclico / Tecidos e Vestuário'},
     'LWSA3': {'nome': 'Locaweb', 'setor': 'Tecnologia da Informação / Programas'},
@@ -169,8 +169,8 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência institucional
-            if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
+            # 🎯 GATILHO COMPRADOR - MANTIDO EM IF TRUE PARA O SEU ALERTA DE TESTE IMEDIATO
+            if True:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
                 alvo_tecnico = preco_atual + (3 * distancia_risco)
