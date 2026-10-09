@@ -10,11 +10,11 @@ import sys
 # ---------------------------------------------------------------------
 # PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (TEMPO REAL / ROBUSTO ITM)
 # ---------------------------------------------------------------------
-# Token real e validado do seu bot ativo no canal
+# Token real e validado do seu bot ativo (@neto2026_b3_bot)
 TELEGRAM_TOKEN = "8977957095:AAG0I120Ehu079dWuMX-cGkqLIjUGBgCsWU"
 
-# Nome público oficial do seu novo canal exclusivo de opções
-TELEGRAM_CHAT_ID = "@sinais_opcoes_b3"
+# Endereço atualizado do seu novo canal público de opções
+TELEGRAM_CHAT_ID = "@opcoes_b3_neto"
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
@@ -110,7 +110,7 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🛠️ GATILHO COMPRADOR - MANTIDO "IF TRUE" PARA FORÇAR SEU ALERTA DE TESTE NA HORA
+            # 🛠 ... GATILHO COMPRADOR - MANTIDO "IF TRUE" PARA FORÇAR SEU ALERTA DE TESTE NA HORA
             if True:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
@@ -143,25 +143,24 @@ except Exception as e:
 df_ops = pd.DataFrame(oportunidades)
 
 if not df_ops.empty:
-    # Ordena por volume e envia os 3 melhores ativos configurados
     df_ops = df_ops.sort_values(by='Vol', ascending=False).head(3)
     
     for index, row in df_ops.iterrows():
         msg_entrada = f"🚨 *ALERTA EM TEMPO REAL B3* 🚨\n"
         msg_entrada += f"_Rompimento com Pressão Compradora Detectado_\n\n"
         msg_entrada += f"📌 *Ação Principal:* {row['Ação']}\n"
-        msg_entrada += f" • Preço Atual: R\$ {row['Entrada']}\n"
-        msg_entrada += f" • Alvo Técnico (3:1): R\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
-        msg_entrada += f" • Stop de Proteção: R\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
+        msg_entrada += f" • Preço Atual: R\\$ {row['Entrada']}\n"
+        msg_entrada += f" • Alvo Técnico (3:1): R\\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
+        msg_entrada += f" • Stop de Proteção: R\\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
         msg_entrada += f" • Projeção de Volume: {row['Vol']}x acima da média habitual\n\n"
         msg_entrada += f"📈 *ESTRUTURA EM DERIVATIVOS (OPÇÕES):*\n"
         msg_entrada += f" • CONTRATO RECOMENDADO: `{row['Opção_Sugerida']}`\n"
         msg_entrada += f" • Tipo: Opção de Compra (CALL - Estilo Robusto ITM)\n"
-        msg_entrada += f" • Strike Estimado: R\$ {row['Strike_Sugerido']}\n\n"
+        msg_entrada += f" • Strike Estimado: R\\$ {row['Strike_Sugerido']}\n\n"
         msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez e execute antes do fechamento do candle diário."
         
         enviar_telegram(msg_entrada)
-        time.sleep(2) # Pequena pausa de segurança anti-flood
+        time.sleep(2)
 else:
     print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
