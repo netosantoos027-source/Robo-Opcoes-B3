@@ -3,23 +3,20 @@ import pandas as pd
 import numpy as np
 import requests
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import sys
 
 # ---------------------------------------------------------------------
 # PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (TEMPO REAL / ROBUSTO ITM)
 # ---------------------------------------------------------------------
-# Token real e validado do seu bot ativo (@neto2026_b3_bot)
 TELEGRAM_TOKEN = "8977957095:AAG0I120Ehu079dWuMX-cGkqLIjUGBgCsWU"
-
-# Nome público oficial do seu novo canal exclusivo de opções
 TELEGRAM_CHAT_ID = "@opcoes_b3_neto"
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
-data_hoje = datetime.now(fuso_br).strftime('%d-%m-%Y %H:%M')
+agora_br = datetime.now(fuso_br)
+data_hoje = agora_br.strftime('%d-%m-%Y %H:%M')
 
-# Lista de ações principais e atualizadas da B3
 acoes = [
     'ALOS3.SA', 'ALPA4.SA', 'ABEV3.SA', 'ASAI3.SA', 'B3SA3.SA', 'BBAS3.SA', 
     'BBDC3.SA', 'BBDC4.SA', 'BBSE3.SA', 'BEEF3.SA', 'BPAC11.SA', 'BRAP4.SA', 
@@ -34,37 +31,34 @@ acoes = [
 ]
 
 def calcular_opcao_teorica(ticker_acao, preco_entrada):
-    """
-    Mapeia matematicamente a CALL ideal do Estilo Robusto.
-    Sempre busca a série do PRÓXIMO mês para proteger contra a perda de tempo (Theta decay).
-    """
     letras_call = {1:'A', 2:'B', 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 9:'I', 10:'J', 11:'K', 12:'L'}
-    
     mes_atual = datetime.now().month
     mes_seguinte = mes_atual + 1 if mes_atual < 12 else 1
     letra_vencimento = letras_call[mes_seguinte]
-    
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    # Filtro Robusto: Strike estruturado ~6% dentro do dinheiro (ITM) para segurança
     strike_alvo = preco_entrada * (1 - 0.06)
     sufixo_strike = str(int(round(strike_alvo)))
     
     ticker_opcao = f"{raiz_ticker}{letra_vencimento}{sufixo_strike}"
     return ticker_opcao, round(strike_alvo, 2)
 
+def calcular_data_alvo_util(dias_necessarios):
+    """Calcula uma data alvo pulando os finais de semana (Sábado e Domingo)"""
+    data_calc = datetime.now(fuso_br)
+    dias_adicionados = 0
+    while dias_added < dias_necessarios:
+        data_calc += timedelta(days=1)
+        if data_calc.weekday() < 5:  # 0 a 4 representa Segunda a Sexta
+            dias_adicionados += 1
+    return data_calc.strftime('%d/%m/%Y')
+
 def enviar_telegram(texto):
-    site_base = "https://" + "api.telegram.org"
+    site_base = "https://telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
     acao_envio = "/sendMessage"
-    
     url_final = site_base + pasta_bot + acao_envio
-    
-    payload = {
-        "chat_id": TELEGRAM_CHAT_ID,
-        "text": texto,
-        "parse_mode": "Markdown"
-    }
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"}
     try:
         response = requests.post(url_final, json=payload, timeout=15)
         if response.status_code == 200:
@@ -90,7 +84,6 @@ try:
             if dados.empty or len(dados) < 200: 
                 continue
 
-            # Indicadores Técnicos Profissionais Corrigidos
             dados['Media_20'] = dados['Close'].rolling(window=20).mean()
             dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
             dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
@@ -106,7 +99,6 @@ try:
             volume_medio = float(dados['Vol_Media_20'].iloc[-1])
             atr_atual = float(dados['ATR'].iloc[-1])
 
-            # PROJEÇÃO DE VOLUME PARA TEMPO REAL
             hora_atual = datetime.now(fuso_br).hour
             if 10 <= hora_atual < 17:
                 fator_tempo = 7 / (hora_atual - 9)
@@ -114,7 +106,7 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🎯 ESTRATÉGIA REAL: Preço acima da banda superior, volume acima da média e tendência macro (M200)
+            # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência institucional
             if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
@@ -124,6 +116,16 @@ try:
                 porcentagem_alvo = ((alvo_tecnico - preco_atual) / preco_atual) * 100
                 score_volume = volume_projetado / volume_medio if volume_medio > 0 else 1.0
 
+                # PROJEÇÃO DE TEMPO ESTIMADO BASEADO NO ATR (ESTATÍSTICA)
+                distancia_ao_alvo = alvo_tecnico - preco_atual
+                # Divide a distância pela variação média diária (ATR) para estimar os dias úteis
+                dias_estimados = int(np.ceil(distancia_ao_alvo / atr_atual)) if atr_atual > 0 else 5
+                
+                # Garante um limite mínimo saudável de carregamento
+                if dias_estimados < 3: dias_estimados = 3
+                if dias_estimados > 10: dias_estimados = 10
+                
+                data_alvo_projetada = calcular_data_alvo_util(dias_estimados)
                 opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
 
                 oportunidades.append({
@@ -135,7 +137,9 @@ try:
                     'Stop_Porc': round(porcentagem_stop, 1),
                     'Vol': round(score_volume, 1),
                     'Opção_Sugerida': opc_sugerida,
-                    'Strike_Sugerido': strike_opc
+                    'Strike_Sugerido': strike_opc,
+                    'Data_Alvo': data_alvo_projetada,
+                    'Dias_Est': dias_estimados
                 })
         except:
             continue
@@ -160,6 +164,9 @@ if not df_ops.empty:
         msg_entrada += f" • CONTRATO RECOMENDADO: `{row['Opção_Sugerida']}`\n"
         msg_entrada += f" • Tipo: Opção de Compra (CALL - Estilo Robusto ITM)\n"
         msg_entrada += f" • Strike Estimado: R\$ {row['Strike_Sugerido']}\n\n"
+        msg_entrada += f"⏳ *ESTIMATIVA DE CARREGAMENTO:*\n"
+        msg_entrada += f" • Janela de Execução: {row['Dias_Est']} dias úteis\n"
+        msg_entrada += f" • *DATA ALVO ESTIMADA: {row['Data_Alvo']}*\n\n"
         msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez."
         
         enviar_telegram(msg_entrada)
@@ -167,4 +174,4 @@ if not df_ops.empty:
 else:
     print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
-print("¼ Análise intradiária de opções finalizada com sucesso!", flush=True)
+print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
