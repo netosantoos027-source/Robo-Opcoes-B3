@@ -13,14 +13,13 @@ import sys
 # Token real e validado do seu bot ativo (@neto2026_b3_bot)
 TELEGRAM_TOKEN = "8977957095:AAG0I120Ehu079dWuMX-cGkqLIjUGBgCsWU"
 
-# Endereço atualizado do seu novo canal público de opções
+# Nome público oficial do seu novo canal exclusivo de opções
 TELEGRAM_CHAT_ID = "@opcoes_b3_neto"
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
-agora_br = datetime.now(fuso_br)
-data_hoje = agora_br.strftime('%d-%m-%Y %H:%M')
+data_hoje = datetime.now(fuso_br).strftime('%d-%m-%Y %H:%M')
 
-# Lista oficial de ações calibradas e líquidas da B3
+# Lista de ações principais e atualizadas da B3
 acoes = [
     'ALOS3.SA', 'ALPA4.SA', 'ABEV3.SA', 'ASAI3.SA', 'B3SA3.SA', 'BBAS3.SA', 
     'BBDC3.SA', 'BBDC4.SA', 'BBSE3.SA', 'BEEF3.SA', 'BPAC11.SA', 'BRAP4.SA', 
@@ -54,22 +53,31 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     ticker_opcao = f"{raiz_ticker}{letra_vencimento}{sufixo_strike}"
     return ticker_opcao, round(strike_alvo, 2)
 
+# ---------------------------------------------------------------------
+# FUNÇÃO DE ENVIO VIA TELEGRAM IDENTICA AO SEU ROBÔ QUE FUNCIONA
+# ---------------------------------------------------------------------
 def enviar_telegram(texto):
-    site_base = "https://telegram.org"
+    site_base = "https://" + "api.telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
     acao_envio = "/sendMessage"
+    
     url_final = site_base + pasta_bot + acao_envio
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"}
-    try: 
-        response = requests.post(url_final, json=payload, timeout=12)
+    
+    payload = {
+        "chat_id": TELEGRAM_CHAT_ID,
+        "text": texto,
+        "parse_mode": "Markdown"
+    }
+    try:
+        response = requests.post(url_final, json=payload, timeout=15)
         if response.status_code == 200:
-            print("📱 Alerta entregue com sucesso no canal do Telegram!", flush=True)
+            print("📱 Relatório enviado com sucesso para o seu Telegram!", flush=True)
         else:
-            print(f"❌ Erro de rejeição do Telegram: {response.text}", flush=True)
-    except Exception as e: 
-        print(f"❌ Falha de conexão de rede com a API do Telegram: {e}", flush=True)
+            print(f"❌ Erro de resposta do Telegram: {response.text}", flush=True)
+    except Exception as e:
+        print(f"❌ Erro de rede: {e}", flush=True)
 
-print(f"📡 [MESA AO VIVO] Iniciando varredura em tempo real B3... {data_hoje}", flush=True)
+print(f"📡 [MESA AO VIVO] Iniciando varredura em tempo real B3... {data_hoje}...")
 oportunidades = []
 
 try:
@@ -85,7 +93,7 @@ try:
             if dados.empty or len(dados) < 200: 
                 continue
 
-            # Cálculo dos Indicadores Técnicos Diários
+            # Indicadores Técnicos Profissionais Corrigidos
             dados['Media_20'] = dados['Close'].rolling(window=20).mean()
             dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
             dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
@@ -94,7 +102,6 @@ try:
             dados['High_Low'] = dados['High'] - dados['Low']
             dados['ATR'] = dados['High_Low'].rolling(window=14).mean()
 
-            # Captura do preço intradiário
             preco_atual = float(dados['Close'].iloc[-1])
             banda_sup_atual = float(dados['Banda_Sup'].iloc[-1])
             media_200_atual = float(dados['Media_200'].iloc[-1])
@@ -110,7 +117,7 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🛠 ... GATILHO COMPRADOR - MANTIDO "IF TRUE" PARA FORÇAR SEU ALERTA DE TESTE NA HORA
+            # 🛠️ GATILHO COMPRADOR - TEMPORARIAMENTE EM "IF TRUE" PARA FORÇAR O SEU ALERTA DE TESTE
             if True:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
@@ -135,9 +142,8 @@ try:
                 })
         except:
             continue
-            
 except Exception as e:
-    print(f"❌ Falha crítica no processamento intradiário: {e}", flush=True)
+    print(f"❌ Erro no download em lote: {e}", flush=True)
     sys.exit(1)
 
 df_ops = pd.DataFrame(oportunidades)
@@ -149,15 +155,15 @@ if not df_ops.empty:
         msg_entrada = f"🚨 *ALERTA EM TEMPO REAL B3* 🚨\n"
         msg_entrada += f"_Rompimento com Pressão Compradora Detectado_\n\n"
         msg_entrada += f"📌 *Ação Principal:* {row['Ação']}\n"
-        msg_entrada += f" • Preço Atual: R\\$ {row['Entrada']}\n"
-        msg_entrada += f" • Alvo Técnico (3:1): R\\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
-        msg_entrada += f" • Stop de Proteção: R\\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
+        msg_entrada += f" • Preço Atual: R\$ {row['Entrada']}\n"
+        msg_entrada += f" • Alvo Técnico (3:1): R\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
+        msg_entrada += f" • Stop de Proteção: R\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
         msg_entrada += f" • Projeção de Volume: {row['Vol']}x acima da média habitual\n\n"
         msg_entrada += f"📈 *ESTRUTURA EM DERIVATIVOS (OPÇÕES):*\n"
         msg_entrada += f" • CONTRATO RECOMENDADO: `{row['Opção_Sugerida']}`\n"
         msg_entrada += f" • Tipo: Opção de Compra (CALL - Estilo Robusto ITM)\n"
-        msg_entrada += f" • Strike Estimado: R\\$ {row['Strike_Sugerido']}\n\n"
-        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez e execute antes do fechamento do candle diário."
+        msg_entrada += f" • Strike Estimado: R\$ {row['Strike_Sugerido']}\n\n"
+        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez."
         
         enviar_telegram(msg_entrada)
         time.sleep(2)
