@@ -53,9 +53,6 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     ticker_opcao = f"{raiz_ticker}{letra_vencimento}{sufixo_strike}"
     return ticker_opcao, round(strike_alvo, 2)
 
-# ---------------------------------------------------------------------
-# FUNÇÃO DE ENVIO VIA TELEGRAM IDENTICA AO SEU ROBÔ QUE FUNCIONA
-# ---------------------------------------------------------------------
 def enviar_telegram(texto):
     site_base = "https://" + "api.telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
@@ -117,8 +114,8 @@ try:
             else:
                 volume_projetado = volume_atual
 
-            # 🛠️ GATILHO COMPRADOR - TEMPORARIAMENTE EM "IF TRUE" PARA FORÇAR O SEU ALERTA DE TESTE
-            if True:
+            # 🎯 ESTRATÉGIA REAL: Preço acima da banda superior, volume acima da média e tendência macro (M200)
+            if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
                 alvo_tecnico = preco_atual + (3 * distancia_risco)
@@ -170,4 +167,4 @@ if not df_ops.empty:
 else:
     print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
-print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
+print("¼ Análise intradiária de opções finalizada com sucesso!", flush=True)
