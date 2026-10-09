@@ -37,24 +37,24 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     letra_vencimento = letras_call[mes_seguinte]
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    strike_alvo = preco_entrada * (1 - 0.06)
+    # Calibrado a 3% de distância para garantir book cheio de formadores de mercado
+    strike_alvo = preco_entrada * (1 - 0.03)
     sufixo_strike = str(int(round(strike_alvo)))
     
     ticker_opcao = f"{raiz_ticker}{letra_vencimento}{sufixo_strike}"
     return ticker_opcao, round(strike_alvo, 2)
 
 def calcular_data_alvo_util(dias_necessarios):
-    """Calcula uma data alvo pulando os finais de semana (Sábado e Domingo)"""
     data_calc = datetime.now(fuso_br)
     dias_adicionados = 0
-    while dias_added < dias_necessarios:
+    while dias_adicionados < dias_necessarios:
         data_calc += timedelta(days=1)
-        if data_calc.weekday() < 5:  # 0 a 4 representa Segunda a Sexta
+        if data_calc.weekday() < 5:
             dias_adicionados += 1
     return data_calc.strftime('%d/%m/%Y')
 
 def enviar_telegram(texto):
-    site_base = "https://telegram.org"
+    site_base = "https://api.telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
     acao_envio = "/sendMessage"
     url_final = site_base + pasta_bot + acao_envio
@@ -118,18 +118,27 @@ try:
 
                 # PROJEÇÃO DE TEMPO ESTIMADO BASEADO NO ATR (ESTATÍSTICA)
                 distancia_ao_alvo = alvo_tecnico - preco_atual
-                # Divide a distância pela variação média diária (ATR) para estimar os dias úteis
                 dias_estimados = int(np.ceil(distancia_ao_alvo / atr_atual)) if atr_atual > 0 else 5
                 
-                # Garante um limite mínimo saudável de carregamento
                 if dias_estimados < 3: dias_estimados = 3
                 if dias_estimados > 10: dias_estimados = 10
                 
                 data_alvo_projetada = calcular_data_alvo_util(dias_estimados)
                 opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
 
+                # 🌐 CAPTURA DO NOME E SETOR EM TEMPO REAL VIA YFINANCE (SEM DICIONÁRIO PESADO)
+                try:
+                    obj_ticker = yf.Ticker(ticker)
+                    nome_empresa = obj_ticker.info.get('longName', ticker.replace('.SA', ''))
+                    setor_empresa = obj_ticker.info.get('sector', 'Setor Geral')
+                except:
+                    nome_empresa = ticker.replace('.SA', '')
+                    setor_empresa = 'Setor Geral'
+
                 oportunidades.append({
                     'Ação': ticker.replace('.SA', ''),
+                    'Nome': nome_empresa,
+                    'Setor': setor_empresa,
                     'Entrada': round(preco_atual, 2),
                     'Alvo': round(alvo_tecnico, 2),
                     'Alvo_Porc': round(porcentagem_alvo, 1),
@@ -156,6 +165,9 @@ if not df_ops.empty:
         msg_entrada = f"🚨 *ALERTA EM TEMPO REAL B3* 🚨\n"
         msg_entrada += f"_Rompimento com Pressão Compradora Detectado_\n\n"
         msg_entrada += f"📌 *Ação Principal:* {row['Ação']}\n"
+        msg_entrada += f" • Empresa: {row['Nome']}\n"
+        msg_entrada += f" • Setor: {row['Setor']}\n\n"
+        msg_entrada += f"📊 *MÉTRICAS DE ENTRADA:*\n"
         msg_entrada += f" • Preço Atual: R\$ {row['Entrada']}\n"
         msg_entrada += f" • Alvo Técnico (3:1): R\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
         msg_entrada += f" • Stop de Proteção: R\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
