@@ -30,7 +30,7 @@ acoes = [
     'UGPA3.SA', 'USIM5.SA', 'VALE3.SA', 'VAMO3.SA', 'VBBR3.SA', 'WEGE3.SA', 'YDUQ3.SA'
 ]
 
-# 🏛️ DICIONÁRIO INTEGRADO DE EMPRESAS E SETORES DA B3
+# Dicionário integrado de empresas e setores da B3
 info_empresas = {
     'ALOS3': {'nome': 'Allos', 'setor': 'Consumo Cíclico / Imóveis'},
     'ALPA4': {'nome': 'Alpargatas', 'setor': 'Consumo Cíclico / Calçados'},
@@ -102,7 +102,6 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     letra_vencimento = letras_call[mes_seguinte]
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    # Modelo Calibrado: Strike posicionado a 3% ITM para liquidez estável
     strike_alvo = preco_entrada * (1 - 0.03)
     sufixo_strike = str(int(round(strike_alvo)))
     
@@ -114,12 +113,12 @@ def calcular_data_alvo_util(dias_necessarios):
     dias_adicionados = 0
     while dias_adicionados < dias_necessarios:
         data_calc += timedelta(days=1)
-        if data_calc.weekday() < 5:  # Considera apenas Segunda a Sexta-feira
+        if data_calc.weekday() < 5:
             dias_adicionados += 1
     return data_calc.strftime('%d/%m/%Y')
 
 def enviar_telegram(texto):
-    site_base = "https://" + "api.telegram.org"
+    site_base = "https://telegram.org"
     pasta_bot = "/bot" + TELEGRAM_TOKEN
     acao_envio = "/sendMessage"
     url_final = site_base + pasta_bot + acao_envio
@@ -138,37 +137,100 @@ oportunidades = []
 
 try:
     dados_lote = yf.download(acoes, period='250d', group_by='ticker', progress=False)
-    
-    for ticker in acoes:
-        try:
-            if ticker in dados_lote.columns.get_level_values(0):
-                dados = dados_lote[ticker].dropna()
-            else:
-                continue
+except Exception as e:
+    print(f"❌ Erro crítico no download em lote: {e}", flush=True)
+    sys.exit(1)
 
-            if dados.empty or len(dados) < 200: 
-                continue
+for ticker in acoes:
+    try:
+        if ticker in dados_lote.columns.get_level_values(0):
+            dados = dados_lote[ticker].dropna()
+        else:
+            continue
 
-            dados['Media_20'] = dados['Close'].rolling(window=20).mean()
-            dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
-            dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
-            dados['Vol_Media_20'] = dados['Volume'].rolling(window=20).mean()
-            dados['Media_200'] = dados['Close'].rolling(window=200).mean()
-            dados['High_Low'] = dados['High'] - dados['Low']
-            dados['ATR'] = dados['High_Low'].rolling(window=14).mean()
+        if dados.empty or len(dados) < 200: 
+            continue
 
-            preco_atual = float(dados['Close'].iloc[-1])
-            banda_sup_atual = float(dados['Banda_Sup'].iloc[-1])
-            media_200_atual = float(dados['Media_200'].iloc[-1])
-            volume_atual = float(dados['Volume'].iloc[-1])
-            volume_medio = float(dados['Vol_Media_20'].iloc[-1])
-            atr_atual = float(dados['ATR'].iloc[-1])
+        dados['Media_20'] = dados['Close'].rolling(window=20).mean()
+        dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
+        dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
+        dados['Vol_Media_20'] = dados['Volume'].rolling(window=20).mean()
+        dados['Media_200'] = dados['Close'].rolling(window=200).mean()
+        dados['High_Low'] = dados['High'] - dados['Low']
+        dados['ATR'] = dados['High_Low'].rolling(window=14).mean()
 
-            hora_atual = datetime.now(fuso_br).hour
-            if 10 <= hora_atual < 17:
-                fator_tempo = 7 / (hora_atual - 9)
-                volume_projetado = volume_atual * fator_tempo
-            else:
-                volume_projetado = volume_atual
+        preco_atual = float(dados['Close'].iloc[-1])
+        banda_sup_atual = float(dados['Banda_Sup'].iloc[-1])
+        media_200_atual = float(dados['Media_200'].iloc[-1])
+        volume_atual = float(dados['Volume'].iloc[-1])
+        volume_medio = float(dados['Vol_Media_20'].iloc[-1])
+        atr_atual = float(dados['ATR'].iloc[-1])
 
-            # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência macro
+        hora_atual = datetime.now(fuso_br).hour
+        if 10 <= hora_atual < 17:
+            fator_tempo = 7 / (hora_atual - 9)
+            volume_projetado = volume_atual * fator_tempo
+        else:
+            volume_projetado = volume_atual
+
+        # 🎯 ESTRATÉGIA REAL EM EXECUÇÃO
+        if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
+            stop_tecnico = preco_atual - (2 * atr_atual)
+            distancia_risco = preco_atual - stop_tecnico
+alvo_tecnico = preco_atual + (3 * distancia_risco)
+porcentagem_stop = ((preco_atual - stop_tecnico) / preco_atual) * 100
+porcentagem_alvo = ((alvo_tecnico - preco_atual) / preco_atual) * 100
+score_volume = volume_projetado / volume_medio if volume_medio > 0 else 1.0
+distancia_ao_alvo = alvo_tecnico - preco_atual
+dias_estimados = int(np.ceil(distancia_ao_alvo / atr_atual)) if atr_atual > 0 else 5
+if dias_estimados < 3: dias_estimados = 3
+if dias_estimados > 10: dias_estimados = 10
+data_alvo_projetada = calcular_data_alvo_util(dias_estimados)
+opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
+raiz_pura = ticker.replace('.SA', '')
+nome_empresa = info_empresas.get(raiz_pura, {}).get('nome', 'Empresa B3')
+setor_empresa = info_empresas.get(raiz_pura, {}).get('setor', 'Setor Geral')
+oportunidades.append({
+'Ação': raiz_pura,
+'Nome': nome_empresa,
+'Setor': setor_empresa,
+'Entrada': round(preco_atual, 2),
+'Alvo': round(alvo_tecnico, 2),
+'Alvo_Porc': round(porcentagem_alvo, 1),
+'Stop': round(stop_tecnico, 2),
+'Stop_Porc': round(porcentagem_stop, 1),
+'Vol': round(score_volume, 1),
+'Opção_Sugerida': opc_sugerida,
+'Strike_Sugerido': strike_opc,
+'Data_Alvo': data_alvo_projetada,
+'Dias_Est': dias_estimados
+})
+except Exception as e:
+continue
+df_ops = pd.DataFrame(oportunidades)
+if not df_ops.empty:
+df_ops = df_ops.sort_values(by='Vol', ascending=False).head(3)
+for index, row in df_ops.iterrows():
+msg_entrada = f"🚨 ALERTA EM TEMPO REAL B3 🚨\n"
+msg_entrada += f"Rompimento com Pressão Compradora Detectado\n\n"
+msg_entrada += f"📌 Ação Principal: {row['Ação']}\n"
+msg_entrada += f" • Empresa: {row['Nome']}\n"
+msg_entrada += f" • Setor: {row['Setor']}\n\n"
+msg_entrada += f"📊 MÉTRICAS DE ENTRADA:\n"
+msg_entrada += f" • Preço Atual: R$ {row['Entrada']}\n"
+msg_entrada += f" • Alvo Técnico (3:1): R$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
+msg_entrada += f" • Stop de Proteção: R$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
+msg_entrada += f" • Projeção de Volume: {row['Vol']}x acima da média habitual\n\n"
+msg_entrada += f"📈 ESTRUTURA EM DERIVATIVOS (OPÇÕES):\n"
+msg_entrada += f" • CONTRATO RECOMENDADO: {row['Opção_Sugerida']}\n"
+msg_entrada += f" • Tipo: Opção de Compra (CALL - Estilo Robusto ITM)\n"
+msg_entrada += f" • Strike Estimado: R$ {row['Strike_Sugerido']}\n\n"
+msg_entrada += f"⏳ ESTIMATIVA DE CARREGAMENTO:\n"
+msg_entrada += f" • Janela de Execução: {row['Dias_Est']} dias úteis\n"
+msg_entrada += f" • DATA ALVO ESTIMADA: {row['Data_Alvo']}\n\n"
+msg_entrada += f"⚠️ Gatilho Operacional: Verifique a liquidez real no book. Caso o contrato exato esteja ilíquido, suba de 1 a 2 strikes em direção ao preço de tela."
+enviar_telegram(msg_entrada)
+time.sleep(2)
+else:
+print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
+print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
