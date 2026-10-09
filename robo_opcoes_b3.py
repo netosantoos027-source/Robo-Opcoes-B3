@@ -99,7 +99,7 @@ try:
             volume_medio = float(dados['Vol_Media_20'].iloc[-1])
             atr_atual = float(dados['ATR'].iloc[-1])
 
-            hora_atual = datetime.now(fuso_br).hour
+                      hora_atual = datetime.now(fuso_br).hour
             if 10 <= hora_atual < 17:
                 fator_tempo = 7 / (hora_atual - 9)
                 volume_projetado = volume_atual * fator_tempo
@@ -126,14 +126,30 @@ try:
                 data_alvo_projetada = calcular_data_alvo_util(dias_estimados)
                 opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
 
-                # 🌐 CAPTURA DO NOME E SETOR EM TEMPO REAL VIA YFINANCE (SEM DICIONÁRIO PESADO)
+                # 🌐 CAPTURA E TRADUÇÃO DO NOME E SETOR EM TEMPO REAL
                 try:
                     obj_ticker = yf.Ticker(ticker)
                     nome_empresa = obj_ticker.info.get('longName', ticker.replace('.SA', ''))
-                    setor_empresa = obj_ticker.info.get('sector', 'Setor Geral')
+                    setor_en = obj_ticker.info.get('sector', 'General')
+                    
+                    # Dicionário de tradução ultra-leve dos setores principais da B3
+                    tradutor_setores = {
+                        'Financial Services': 'Financeiro / Serviços Financeiros',
+                        'Financial': 'Financeiro / Bancos',
+                        'Basic Materials': 'Materiais Básicos / Mineração e Siderurgia',
+                        'Energy': 'Petróleo, Gás e Biocombustíveis',
+                        'Utilities': 'Utilidade Pública / Energia Elétrica e Saneamento',
+                        'Consumer Cyclical': 'Consumo Cíclico / Varejo e Imóveis',
+                        'Consumer Defensive': 'Consumo não Cíclico / Alimentos e Bebidas',
+                        'Healthcare': 'Saúde / Medicina e Medicamentos',
+                        'Technology': 'Tecnologia da Informação',
+                        'Communication Services': 'Telecomunicações',
+                        'Industrials': 'Bens Industriais / Transporte e Máquinas'
+                    }
+                    setor_empresa = tradutor_setores.get(setor_en, setor_en)
                 except:
                     nome_empresa = ticker.replace('.SA', '')
-                    setor_empresa = 'Setor Geral'
+                    setor_empresa = 'Setor Geral B3'
 
                 oportunidades.append({
                     'Ação': ticker.replace('.SA', ''),
@@ -186,4 +202,4 @@ if not df_ops.empty:
 else:
     print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
-print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
+print("¼ Análise intradiária de opções finalizada com sucesso!", flush=True)
