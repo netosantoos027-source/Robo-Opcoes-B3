@@ -10,8 +10,11 @@ import sys
 # ---------------------------------------------------------------------
 # PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (TEMPO REAL / ROBUSTO ITM)
 # ---------------------------------------------------------------------
+# Token oficial recuperado do seu bot (@SinalB3_bot)
 TELEGRAM_TOKEN = "8977957095:AAFGcSuzjKxb2uX0lQzWwaozFdrreZ9myjc"
-TELEGRAM_CHAT_ID = "@robo_over_05_ht"
+
+# Canal Novo e Exclusivo configurado para o projeto de opções
+TELEGRAM_CHAT_ID = "@sinais_opcoes_b3"
 
 fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
@@ -59,7 +62,7 @@ def enviar_telegram(texto):
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"}
     try: 
         requests.post(url_final, json=payload, timeout=8)
-        print("📱 Notificação em tempo real enviada ao Telegram!", flush=True)
+        print("ℹ️ Notificação em tempo real enviada ao telegram!", flush=True)
     except: 
         print("❌ Falha de comunicação com a API do Telegram.", flush=True)
 
@@ -67,7 +70,6 @@ print(f"📡 [MESA AO VIVO] Iniciando varredura em tempo real B3... {data_hoje}"
 oportunidades = []
 
 try:
-    # Baixa dados recentes (período menor e dinâmico para otimizar velocidade no intradiário)
     dados_lote = yf.download(acoes, period='250d', group_by='ticker', progress=False)
     
     for ticker in acoes:
@@ -98,16 +100,14 @@ try:
             atr_atual = float(dados['ATR'].iloc[-1])
 
             # PROJEÇÃO DE VOLUME PARA TEMPO REAL
-            # Ajusta proporcionalmente o volume se rodar no meio do dia para não descalibrar o filtro
             hora_atual = datetime.now(fuso_br).hour
             if 10 <= hora_atual < 17:
-                # Multiplicador estimado para projetar o fechamento do volume
                 fator_tempo = 7 / (hora_atual - 9)
                 volume_projetado = volume_atual * fator_tempo
             else:
                 volume_projetado = volume_atual
 
-            # GATILHO COMPRADOR EM TEMPO REAL (Preço violando a banda superior com projeção de volume e tendência macro de alta)
+            # GATILHO COMPRADOR EM TEMPO REAL
             if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
@@ -140,7 +140,6 @@ except Exception as e:
 df_ops = pd.DataFrame(oportunidades)
 
 if not df_ops.empty:
-    # Ordena e envia apenas as 3 melhores pressões de compra do momento
     df_ops = df_ops.sort_values(by='Vol', ascending=False).head(3)
     
     for index, row in df_ops.iterrows():
