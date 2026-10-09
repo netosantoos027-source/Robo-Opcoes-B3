@@ -98,8 +98,7 @@ try:
             volume_atual = float(dados['Volume'].iloc[-1])
             volume_medio = float(dados['Vol_Media_20'].iloc[-1])
             atr_atual = float(dados['ATR'].iloc[-1])
-
-                      hora_atual = datetime.now(fuso_br).hour
+            hora_atual = datetime.now(fuso_br).hour
             if 10 <= hora_atual < 17:
                 fator_tempo = 7 / (hora_atual - 9)
                 volume_projetado = volume_atual * fator_tempo
@@ -136,6 +135,7 @@ try:
                     tradutor_setores = {
                         'Financial Services': 'Financeiro / Serviços Financeiros',
                         'Financial': 'Financeiro / Bancos',
+                        'Financials': 'Financeiro / Bancos',
                         'Basic Materials': 'Materiais Básicos / Mineração e Siderurgia',
                         'Energy': 'Petróleo, Gás e Biocombustíveis',
                         'Utilities': 'Utilidade Pública / Energia Elétrica e Saneamento',
@@ -202,4 +202,4 @@ if not df_ops.empty:
 else:
     print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
-print("¼ Análise intradiária de opções finalizada com sucesso!", flush=True)
+print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
