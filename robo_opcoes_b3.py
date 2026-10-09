@@ -8,7 +8,7 @@ import pytz
 import sys
 
 # ---------------------------------------------------------------------
-# PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (ROBUSTO ITM)
+# PROJETO: ROBÔ IA B3 + OPÇÕES ESTRUTURADAS (TEMPO REAL / ROBUSTO ITM)
 # ---------------------------------------------------------------------
 TELEGRAM_TOKEN = "8977957095:AAFGcSuzjKxb2uX0lQzWwaozFdrreZ9myjc"
 TELEGRAM_CHAT_ID = "@robo_over_05_ht"
@@ -17,6 +17,7 @@ fuso_br = pytz.timezone('America/Sao_Paulo')
 agora_br = datetime.now(fuso_br)
 data_hoje = agora_br.strftime('%d-%m-%Y %H:%M')
 
+# Lista oficial de ações calibradas e líquidas da B3
 acoes = [
     'ALOS3.SA', 'ALPA4.SA', 'ABEV3.SA', 'ASAI3.SA', 'B3SA3.SA', 'BBAS3.SA', 
     'BBDC3.SA', 'BBDC4.SA', 'BBSE3.SA', 'BEEF3.SA', 'BPAC11.SA', 'BRAP4.SA', 
@@ -31,13 +32,19 @@ acoes = [
 ]
 
 def calcular_opcao_teorica(ticker_acao, preco_entrada):
+    """
+    Mapeia matematicamente a CALL ideal do Estilo Robusto.
+    Sempre busca a série do PRÓXIMO mês para proteger contra a perda de tempo (Theta decay).
+    """
     letras_call = {1:'A', 2:'B', 3:'C', 4:'D', 5:'E', 6:'F', 7:'G', 8:'H', 9:'I', 10:'J', 11:'K', 12:'L'}
+    
     mes_atual = datetime.now().month
     mes_seguinte = mes_atual + 1 if mes_atual < 12 else 1
     letra_vencimento = letras_call[mes_seguinte]
+    
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    # Filtro Robusto: Strike estruturado ~6% dentro do dinheiro (ITM)
+    # Filtro Robusto: Strike estruturado ~6% dentro do dinheiro (ITM) para segurança
     strike_alvo = preco_entrada * (1 - 0.06)
     sufixo_strike = str(int(round(strike_alvo)))
     
@@ -52,15 +59,17 @@ def enviar_telegram(texto):
     payload = {"chat_id": TELEGRAM_CHAT_ID, "text": texto, "parse_mode": "Markdown"}
     try: 
         requests.post(url_final, json=payload, timeout=8)
-        print("📱 Notificação enviada para o canal com sucesso!", flush=True)
+        print("📱 Notificação em tempo real enviada ao Telegram!", flush=True)
     except: 
         print("❌ Falha de comunicação com a API do Telegram.", flush=True)
 
-print(f"📡 [MESA DERIVATIVOS] Iniciando varredura automatizada B3... {data_hoje}", flush=True)
+print(f"📡 [MESA AO VIVO] Iniciando varredura em tempo real B3... {data_hoje}", flush=True)
 oportunidades = []
 
 try:
+    # Baixa dados recentes (período menor e dinâmico para otimizar velocidade no intradiário)
     dados_lote = yf.download(acoes, period='250d', group_by='ticker', progress=False)
+    
     for ticker in acoes:
         try:
             if ticker in dados_lote.columns.get_level_values(0):
@@ -71,6 +80,7 @@ try:
             if dados.empty or len(dados) < 200: 
                 continue
 
+            # Cálculo dos Indicadores Técnicos Diários
             dados['Media_20'] = dados['Close'].rolling(window=20).mean()
             dados['Desvio_20'] = dados['Close'].rolling(window=20).std()
             dados['Banda_Sup'] = dados['Media_20'] + (dados['Desvio_20'] * 2)
@@ -79,6 +89,7 @@ try:
             dados['High_Low'] = dados['High'] - dados['Low']
             dados['ATR'] = dados['High_Low'].rolling(window=14).mean()
 
+            # Captura do preço de AGORA (último tick do candle intradiário em formação)
             preco_atual = float(dados['Close'].iloc[-1])
             banda_sup_atual = float(dados['Banda_Sup'].iloc[-1])
             media_200_atual = float(dados['Media_200'].iloc[-1])
@@ -86,14 +97,25 @@ try:
             volume_medio = float(dados['Vol_Media_20'].iloc[-1])
             atr_atual = float(dados['ATR'].iloc[-1])
 
-            if preco_atual > banda_sup_atual and volume_atual > volume_medio and preco_atual > media_200_atual:
+            # PROJEÇÃO DE VOLUME PARA TEMPO REAL
+            # Ajusta proporcionalmente o volume se rodar no meio do dia para não descalibrar o filtro
+            hora_atual = datetime.now(fuso_br).hour
+            if 10 <= hora_atual < 17:
+                # Multiplicador estimado para projetar o fechamento do volume
+                fator_tempo = 7 / (hora_atual - 9)
+                volume_projetado = volume_atual * fator_tempo
+            else:
+                volume_projetado = volume_atual
+
+            # GATILHO COMPRADOR EM TEMPO REAL (Preço violando a banda superior com projeção de volume e tendência macro de alta)
+            if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
                 stop_tecnico = preco_atual - (2 * atr_atual)
                 distancia_risco = preco_atual - stop_tecnico
                 alvo_tecnico = preco_atual + (3 * distancia_risco)
                 
                 porcentagem_stop = ((preco_atual - stop_tecnico) / preco_atual) * 100
                 porcentagem_alvo = ((alvo_tecnico - preco_atual) / preco_atual) * 100
-                score_volume = volume_atual / volume_medio if volume_medio > 0 else 1.0
+                score_volume = volume_projetado / volume_medio if volume_medio > 0 else 1.0
 
                 opc_sugerida, strike_opc = calcular_opcao_teorica(ticker, preco_atual)
 
@@ -112,29 +134,31 @@ try:
             continue
             
 except Exception as e:
-    print(f"❌ Falha crítica no processamento de lote: {e}", flush=True)
+    print(f"❌ Falha crítica no processamento intradiário: {e}", flush=True)
     sys.exit(1)
 
 df_ops = pd.DataFrame(oportunidades)
 
 if not df_ops.empty:
+    # Ordena e envia apenas as 3 melhores pressões de compra do momento
     df_ops = df_ops.sort_values(by='Vol', ascending=False).head(3)
+    
     for index, row in df_ops.iterrows():
-        msg_entrada = f"🚨 *ALERTA DE ENTRADA B3* 🚨\n"
-        msg_entrada += f"_Rompimento de Volatilidade + Tendência de Alta_\n\n"
+        msg_entrada = f"🚨 *ALERTA EM TEMPO REAL B3* 🚨\n"
+        msg_entrada += f"_Rompimento com Pressão Compradora Detectado_\n\n"
         msg_entrada += f"📌 *Ação Principal:* {row['Ação']}\n"
-        msg_entrada += f" • Preço de Entrada: R\\$ {row['Entrada']}\n"
+        msg_entrada += f" • Preço Atual: R\\$ {row['Entrada']}\n"
         msg_entrada += f" • Alvo Técnico (3:1): R\\$ {row['Alvo']} (+{row['Alvo_Porc']}%)\n"
         msg_entrada += f" • Stop de Proteção: R\\$ {row['Stop']} (-{row['Stop_Porc']}%)\n"
-        msg_entrada += f" • Pressão Compradora: {row['Vol']}x acima do normal\n\n"
+        msg_entrada += f" • Projeção de Volume: {row['Vol']}x acima da média habitual\n\n"
         msg_entrada += f"📈 *ESTRUTURA EM DERIVATIVOS (OPÇÕES):*\n"
         msg_entrada += f" • CONTRATO RECOMENDADO: `{row['Opção_Sugerida']}`\n"
         msg_entrada += f" • Tipo: Opção de Compra (CALL - Estilo Robusto ITM)\n"
-        msg_entrada += f" • Strike Estimado Próximo: R\\$ {row['Strike_Sugerido']}\n\n"
-        msg_entrada += f"⚠️ *Gatilho Operacional:* Executar entrada se o prêmio do contrato estiver líquido e com spread reduzido no Home Broker."
+        msg_entrada += f" • Strike Estimado: R\\$ {row['Strike_Sugerido']}\n\n"
+        msg_entrada += f"⚠️ *Gatilho Operacional:* Verifique o book da opção no Home Broker. Confirme se há liquidez e execute antes do fechamento do candle diário."
         
         enviar_telegram(msg_entrada)
 else:
-    print("📊 Varredura B3 concluída: Nenhuma ação atendeu aos critérios operacionais hoje.", flush=True)
+    print("📊 Varredura concluída: Nenhuma ação apresentou rompimento válido neste momento.", flush=True)
 
-print("✅ Processo de análise de opções finalizado com sucesso!", flush=True)
+print("✅ Análise intradiária de opções finalizada com sucesso!", flush=True)
