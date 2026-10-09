@@ -102,7 +102,7 @@ def calcular_opcao_teorica(ticker_acao, preco_entrada):
     letra_vencimento = letras_call[mes_seguinte]
     raiz_ticker = ticker_acao.replace('.SA', '')
     
-    # Modelo Calibrado: Strike posicionado a 3% ITM (Dentro do Dinheiro) para liquidez
+    # Modelo Calibrado: Strike posicionado a 3% ITM para liquidez estável
     strike_alvo = preco_entrada * (1 - 0.03)
     sufixo_strike = str(int(round(strike_alvo)))
     
@@ -114,7 +114,7 @@ def calcular_data_alvo_util(dias_necessarios):
     dias_adicionados = 0
     while dias_adicionados < dias_necessarios:
         data_calc += timedelta(days=1)
-        if data_calc.weekday() < 5:
+        if data_calc.weekday() < 5:  # Considera apenas Segunda a Sexta-feira
             dias_adicionados += 1
     return data_calc.strftime('%d/%m/%Y')
 
@@ -172,4 +172,3 @@ try:
                 volume_projetado = volume_atual
 
             # 🎯 ESTRATÉGIA REAL ATIVADA: Filtros de volatilidade, volume e tendência macro
-            if preco_atual > banda_sup_atual and volume_projetado > volume_medio and preco_atual > media_200_atual:
