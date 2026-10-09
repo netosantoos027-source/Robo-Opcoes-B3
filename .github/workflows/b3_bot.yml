@@ -2,12 +2,8 @@ name: Executar Robo IA B3 Opcoes
 
 on:
   schedule:
-    # ⏰ Cron configurado para rodar de hora em hora (Minuto 0)
-    # Das 13:00 UTC às 21:00 UTC -> Equivale a 10:00h até 18:00h de Brasília
-    # Atua estritamente de Segunda a Sexta-feira durante o pregão ativo
     - cron: '0 13-21 * * 1-5'
   
-  # Permite que você ative o robô manualmente pelo site do GitHub quando quiser
   workflow_dispatch:
 
 jobs:
